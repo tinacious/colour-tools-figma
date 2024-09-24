@@ -1,6 +1,31 @@
 
 figma.showUI(__html__, { width: 600, height: 600 })
 
+async function loadLocalStyles() {
+  const styles = await figma.getLocalPaintStylesAsync()
+
+  const colours: { hex: string, name: string }[] = []
+
+  styles.forEach((style) => {
+    style.paints.forEach((paint) => {
+      if (paint.type === 'SOLID') {
+        colours.push({
+          name: style.name
+            .replace(/\s/g, '_')
+            .replace(/\//g, '__'),
+          hex: figmaRGBToHex(paint.color),
+        })
+      }
+    })
+  })
+
+  figma.ui.postMessage({
+    type: 'local-styles',
+    data: colours,
+  })
+}
+loadLocalStyles()
+
 
 figma.ui.onmessage = async (message) => {
   switch (message.type) {
@@ -8,6 +33,8 @@ figma.ui.onmessage = async (message) => {
       return exportStylesToColourPalette()
     case 'create-palette':
       return createColourPalette(message.data)
+    case 'refresh-local-styles':
+      return loadLocalStyles()
     case 'graph':
       return createGraphWithNumbers(message.data)
     default:
@@ -28,35 +55,16 @@ type CreatePaletteRequest = {
 }
 
 async function createColourPalette(data: CreatePaletteRequest) {
-  console.log('createColourPalette', 'data', data)
-
   const { paletteName, colours } = data
 
   const frame = figma.createFrame()
   frame.resize(200, 200)
 
   frame.name = paletteName
-  // frame.fills = [
-  //   {
-  //     type: 'SOLID',
-  //     color: colourScheme === 'dark' ? hexToFigmaRGB('#000000') : hexToFigmaRGB('#FFFFFF')
-  //   }
-  // ]
   frame.layoutMode = 'HORIZONTAL'
   frame.layoutSizingHorizontal = 'HUG'
 
   const nodes: SceneNode[] = [];
-  // for (let i = 0; i < numberOfRectangles; i++) {
-  //   const rect = figma.createRectangle();
-  //   rect.x = i * 150;
-  //   rect.fills = [{ type: 'SOLID', color: { r: 1, g: 0.5, b: 0 } }];
-  //   figma.currentPage.appendChild(rect);
-  //   nodes.push(rect);
-  // }
-  // figma.currentPage.selection = nodes;
-  // figma.viewport.scrollAndZoomIntoView(nodes);
-
-
 
   colours.forEach(async (colour) => {
     const { name, hex } = colour
@@ -90,6 +98,8 @@ async function createColourPalette(data: CreatePaletteRequest) {
   })
 
   figma.viewport.scrollAndZoomIntoView(nodes)
+
+  loadLocalStyles()
 }
 
 async function exportStylesToColourPalette() {
@@ -196,58 +206,6 @@ function createRectanglesExample() {
   figma.viewport.scrollAndZoomIntoView(nodes);
 }
 
-const themes = {
-  tinacious: {
-    name: "Tinacious Design",
-    colours: [
-      {
-        name: "pink",
-        colour: "#ff3399"
-      },
-      {
-        name: "blue",
-        colour: "#33d5ff"
-      },
-      {
-        name: "grey",
-        colour: "#b3b3d4"
-      },
-      {
-        name: "green",
-        colour: "#00d364"
-      },
-      {
-        name: "purple",
-        colour: "#cc66ff"
-      },
-      {
-        name: "yellow",
-        colour: "#ffcc66"
-      },
-      {
-        name: "turquoise",
-        colour: "#00ced1"
-      },
-      {
-        name: "midnight-sky",
-        colour: "#1d1d26"
-      },
-      {
-        name: "overcast-sky",
-        colour: "#c8c8d5"
-      },
-      {
-        name: "tangerine",
-        colour: "#ffaa00"
-      },
-      {
-        name: "red",
-        colour: "#f10f69"
-      }
-    ]
-  }
-}
-
 // region Colour utils
 
 const namesRGB = ['r', 'g', 'b']
@@ -292,6 +250,36 @@ function webRGBToFigmaRGB(color): any {
   })
 
   if (color[3] !== undefined) rgb['a'] = color[3]
+  return rgb
+}
+
+function figmaRGBToHex(color: RGB | RGBA): string {
+  let hex = '#'
+
+  const rgb = figmaRGBToWebRGB(color) as webRGB | webRGBA
+  hex += ((1 << 24) + (rgb[0] << 16) + (rgb[1] << 8) + rgb[2]).toString(16).slice(1)
+
+  if (rgb[3] !== undefined) {
+    const a = Math.round(rgb[3] * 255).toString(16)
+    if (a.length == 1) {
+      hex += '0' + a
+    } else {
+      if (a !== 'ff') hex += a
+    }
+  }
+  return hex
+}
+
+function figmaRGBToWebRGB(color: RGBA): webRGBA
+function figmaRGBToWebRGB(color: RGB): webRGB
+function figmaRGBToWebRGB(color): any {
+  const rgb = []
+
+  namesRGB.forEach((e, i) => {
+    rgb[i] = Math.round(color[e] * 255)
+  })
+
+  if (color['a'] !== undefined) rgb[3] = Math.round(color['a'] * 100) / 100
   return rgb
 }
 
