@@ -831,7 +831,7 @@
       </div>
 
       <div class="col-half">
-        <h3>Number of shades</h3>
+        <h3>Minimum number of shades</h3>
         <input type="number" v-model="shadesCount" @input="generateShades()">
       </div>
     </div>
@@ -928,6 +928,32 @@
     <p>
       Any colours under <strong>Local Styles</strong> will be available as code snippets under the <strong class="text-link" @click="activeTab = 'code'">Styles Code</strong> tab. This tab contains code snippets for web and mobile development (CSS, Android).
     </p>
+    <p>
+      If at any time you decide you no longer like the styles you've created, you can manually delete them in Figma. After doing so, click the <strong>Refresh</strong> button available on one of the tabs to see this reflected. Refresh also works if you manually create styles in Figma and don't see them available.
+    </p>
+
+    <h2>Example workflow</h2>
+    <ol>
+      <li>
+        Go to <strong class="text-link" @click="activeTab = 'palettes'">Colour Palettes</strong> and choose some brand colours, or copy and paste existing hex values.
+      </li>
+
+      <li>
+        Once colours are picked, click the <strong>Create Styles</strong> button to see them generated as local styles in Figma. These colours are now available for designing with.
+      </li>
+
+      <li>
+        Go to <strong class="text-link" @click="activeTab = 'shades'">Shades</strong> and pick a grey you like. Choose the number of greys you'd like to generate.
+      </li>
+
+      <li>
+        Once you're happy with the generated shades, the <strong>Create Styles</strong> button to see them generated as local styles in Figma. These shades are now available for designing with.
+      </li>
+
+      <li>
+        Go to <strong class="text-link" @click="activeTab = 'code'">Styles Code</strong> and copy any relevant snippets and paste them into your project.
+      </li>
+    </ol>
   </div>
 </div>
 <!-- <button id="export-palette">Export styles to colour palette</button> -->
