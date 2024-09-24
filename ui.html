@@ -1,10 +1,18 @@
 <link rel="stylesheet" href="https://static.figma.com/api/figma-extension-api-0.0.1.css">
 <style>
-  /* :root {
-    color-scheme: dark light;
-  } */
-   /* Shades generated for #1d1d26 with: https://colour-tools.pages.dev/shades */
   :root {
+    --pink: hsl(330, 100%, 60%);
+    --blue: hsl(192, 100%, 60%);
+    --grey: hsl(240, 28%, 77%);
+    --green: hsl(148, 100%, 41%);
+    --purple: hsl(280, 100%, 70%);
+    --yellow: hsl(40, 100%, 70%);
+    --turquoise: hsl(181, 100%, 41%);
+    --midnight-sky: hsl(240, 13%, 13%);
+    --overcast-sky: hsl(240, 13%, 81%);
+    --tangerine: hsl(40, 100%, 50%);
+    --red: hsl(336, 89%, 50%);
+    
     --black: rgb(0, 0, 0);
     --grey_50: rgb(11, 11, 15);
     --grey_100: rgb(22, 22, 29);
@@ -19,10 +27,30 @@
     --grey_950: rgb(241, 241, 244);
     --white: rgb(255, 255, 255);
   }
+  
 
   body {
     font-family: Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
     line-height: 1.6;
+  }
+
+  button.danger {
+    color: #fff;
+    background-color: var(--red);
+    border-color: var(--red);
+  }
+
+  button.white {
+    color: var(--grey_50);
+    background-color: #fff;
+    border-color: #fff;
+  }
+
+  button.small {
+    height: 20px;
+    line-height: 1.6;
+    max-width: 180px;
+    padding: 0 8px;
   }
 
   .tabs {
@@ -35,7 +63,7 @@
 
   .tab {
     padding: 6px 10px;
-    color: #ff3399;
+    color: var(--pink);
     text-decoration: none;
     background: var(--grey_950);
     border: 1px solid var(--grey_800);
@@ -43,8 +71,8 @@
   }
 
   .tab--active {
-    background: white;
-    color: black;
+    background: var(--white);
+    color: var(--grey_50);
     font-weight: 700;
     cursor: default;
   }
@@ -92,14 +120,51 @@
     height: 80px;
     padding: 6px;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    align-items: start;
   }
 
   .swatch__label {
-    background: black;
-    color: white;
+    background: var(--grey_50);
+    color: var(--white);
     padding: 0.25em 0.5em;
     display: inline-block;
     font-size: 0.7rem;
+  }
+
+  .code-layout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1em;
+  }
+
+  .code-layout__title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .code-layout__item {
+    width: 48%;
+    flex-grow: 1;
+  }
+
+  .code-wrapper {
+    overflow: hidden;
+    border-radius: 8px;
+  }
+
+  .code-block {
+    background: var(--grey_950);
+    padding: 10px;
+    box-sizing: border-box;
+    max-width: 100%;
+    overflow-x: scroll;
+    margin: 0;
+    scrollbar-width: thin;
   }
 </style>
 
@@ -133,6 +198,10 @@
       { name: "red", hex: "#f10f69" }
     ],
 
+    get codeBlocks() {
+      return getGeneratedCodeForColours(toObject(this.colors))
+    },
+
     addColor() {
       if (!this.currentColorName) {
         alert('colour name required')
@@ -148,8 +217,22 @@
       this.currentColorHex = getDefaultColour()
     },
 
+    removeColor(hex) {
+      this.colors = this.colors.filter((color) => color.hex !== hex)
+    },
+
     resetPalette() {
       this.colors = []
+    },
+
+    copyCodeToClipboard(codeBlock) {
+      copyTextToClipboard(codeBlock.code, (success) => {
+        const alertMessage = success ?
+          `successfully copied "${codeBlock.name}" code to clipboard` :
+          `failed to copy "${codeBlock.name}" code to clipboard`
+
+        alert(alertMessage)
+      })
     },
 
     /**
@@ -213,7 +296,7 @@
     }, '*')
   }) */
 
-  const showError = errorMessage => {
+  /* const showError = errorMessage => {
     document.querySelector('#errors').textContent = errorMessage
   }
   document.getElementById('bar-chart').addEventListener('click', (evt) => {
@@ -235,7 +318,7 @@
         data: numbers,
       }
     }, '*')
-  })
+  }) */
 
 
   /**
@@ -249,6 +332,193 @@
   function dataFromForm(formElement) {
     const formData = new FormData(formElement)
     return formData.entries()
+  }
+
+  function getGeneratedCodeForColours(colours, topComment) {
+    console.log('generating colours', colours)
+    const copiedComment = `Colours generated with: https://github.com/tinacious/colour-tools-figma`
+    const codeBlocks = []
+
+    // Generate code for Android (XML)
+    const androidXmlCode = []
+    colours.forEach((swatch) => {
+      androidXmlCode.push(`<color name="${swatch.name}">${swatch.hex}</color>`)
+    })
+    codeBlocks.push({
+      name: 'Android (XML)',
+      comment: `<!-- ${copiedComment} -->`,
+      code: androidXmlCode.join('\n'),
+    })
+
+    // Generate code for Android (Jetpack Compose)
+    const androidComposeCode = [
+      'object Shades {'
+    ]
+    colours.forEach((swatch) => {
+      androidComposeCode.push(`    val ${swatch.name} = Color(0xFF${swatch.hex.toUpperCase().replace('#', '')})`)
+    })
+    androidComposeCode.push('}')
+    codeBlocks.push({
+      name: 'Android (Jetpack Compose)',
+      comment: `// ${copiedComment}`,
+      code: androidComposeCode.join('\n'),
+    })
+
+    // Generate Tailwind config
+    const tailwindCode = []
+    // const tailwindCode = ['colors: {']
+    colours.forEach((swatch) => {
+      tailwindCode.push(`  ${swatch.name}: '${swatch.hex}',`)
+    })
+    // tailwindCode.push('}')
+
+    codeBlocks.push({
+      name: 'Tailwind "colors" configuration',
+      comment: `// ${copiedComment}`,
+      code: tailwindCode.join('\n'),
+    })
+
+    // Generate CSS code (hex)
+    const cssCodeHex = [':root {']
+    colours.forEach((swatch) => {
+      cssCodeHex.push(`  --${swatch.name}: ${swatch.hex};`)
+    })
+    cssCodeHex.push('}')
+
+    codeBlocks.push({
+      name: 'CSS (hex)',
+      comment: `/* ${copiedComment} */`,
+      code: cssCodeHex.join('\n'),
+    })
+
+    // Generate CSS code (hsl)
+    const cssCodeHsl = [':root {']
+    colours.forEach((swatch) => {
+      const { h, s, l } = hexToHsl(swatch.hex)
+      const hslCss = `hsl(${(h * 360).toFixed(0)}, ${(s * 100).toFixed(0)}%, ${(l * 100).toFixed(0)}%)`
+
+      cssCodeHsl.push(`  --${swatch.name}: ${hslCss};`)
+    })
+    cssCodeHsl.push('}')
+
+    codeBlocks.push({
+      name: 'CSS (HSL)',
+      comment: `/* ${copiedComment} */`,
+      code: cssCodeHsl.join('\n'),
+    })
+
+    // Generate CSS code (rgb)
+    const cssCodeRgb = [':root {']
+    colours.forEach((swatch) => {
+      const { r, g, b } = hexToWebRGB(swatch.hex)
+      const rgbCss = `rgb(${(r).toFixed(0)}, ${(g).toFixed(0)}, ${(b).toFixed(0)})`
+
+
+      cssCodeRgb.push(`  --${swatch.name}: ${rgbCss};`)
+    })
+    cssCodeRgb.push('}')
+
+    codeBlocks.push({
+      name: 'CSS (RGB)',
+      comment: `/* ${copiedComment} */`,
+      code: cssCodeRgb.join('\n'),
+    })
+
+    // Generate CSS code for SASS (SCSS)
+    const scssCode = []
+    colours.forEach((swatch) => {
+      scssCode.push('$' + swatch.name + `: ${swatch.hex};`)
+    })
+    codeBlocks.push({
+      name: 'Sass (SCSS)',
+      comment: `// ${copiedComment}`,
+      code: scssCode.join('\n'),
+    })
+
+    // Generate CSS code for Stylus
+    const stylusCssCode = []
+    colours.forEach((swatch) => {
+      stylusCssCode.push(`${swatch.name} = ${swatch.hex}`)
+    })
+    codeBlocks.push({
+      name: 'Sass (Stylus)',
+      comment: `// ${copiedComment}`,
+      code: stylusCssCode.join('\n'),
+    })
+
+    return codeBlocks
+  }
+
+  function toObject(proxy) {
+    return JSON.parse(JSON.stringify(proxy))
+  }
+
+  function copyTextToClipboard(text, callback) {
+    if (!navigator.clipboard) {
+      fallbackCopyTextToClipboard(text, callback);
+      return;
+    }
+    navigator.clipboard.writeText(text).then(function () {
+      callback(true)
+    }, function (err) {
+      console.error('async: failed to copy', err);
+      callback(false)
+    });
+  }
+
+  function fallbackCopyTextToClipboard(text, callback) {
+    var textArea = document.createElement("textarea");
+    textArea.value = text;
+
+    // Avoid scrolling to bottom
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      document.execCommand('copy');
+      callback(true)
+    } catch (err) {
+      console.error('fallback: failed to copy', err);
+      callback(false)
+    }
+
+    document.body.removeChild(textArea);
+  }
+
+  function hexToWebRGB(hex) {
+    const r = parseInt(hex.substr(1, 2), 16)
+    const g = parseInt(hex.substr(3, 2), 16)
+    const b = parseInt(hex.substr(5, 2), 16)
+
+    return { r, g, b }
+  }
+
+  function hexToHsl(hex) {
+    let { r, g, b } = hexToWebRGB(hex)
+
+    r /= 255, g /= 255, b /= 255;
+    let max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+
+    if (max == min) {
+      h = s = 0; // achromatic
+    } else {
+      var d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h /= 6;
+    }
+
+    return { h, s, l };
   }
 </script>
 
@@ -269,7 +539,7 @@
     <div class="form-section">
       <input type="text" v-model="paletteName" placeholder="Palette name" autofocus>
     </div>
-  
+
     <h3>Add colour</h3>
     <form id="add-color-form" class="add-color-form" @submit.prevent="">
       <input type="text" placeholder="Colour name" name="color_name" v-model="currentColorName">
@@ -277,28 +547,40 @@
       <input type="text" name="picked_color" v-model="currentColorHex">
       <button type="submit" @click="addColor">Add Colour</button>
     </form>
-  
+
     <div v-if="colors.length" class="swatches form-section">
       <div v-for="color in colors" class="swatch" :style="{ background: color.hex }">
         <span class="swatch__label">{{color.name}}</span>
+
+        <button @click="removeColor(color.hex)" title="Delete colour" class="small white">
+          🗑️
+        </button>
       </div>
     </div>
     <div v-if="colors.length" class="form-section button-layout">
-      <button @click="createColorPalette">Create Palette</button>
+      <button class="primary" @click="createColorPalette">Create Palette</button>
       <button @click="resetPalette">Reset</button>
     </div>
-  
+
     <div v-if="!colors.length">
       <p class="text-center form-section">No colours yet</p>
     </div>
+
+    <div v-if="codeBlocks.length" class="form-section code-layout" v-if="codeBlocks.length">
+      <div class="code-layout__item" v-for="codeBlock in codeBlocks">
+        <div class="code-layout__title">
+          <h3>{{codeBlock.name}}</h3>
+
+          <button class="small" @click="copyCodeToClipboard(codeBlock)">
+            Copy
+          </button>
+        </div>
+
+        <div class="code-wrapper">
+          <pre class="code-block">{{codeBlock.code}}</pre>
+        </div>
+      </div>
+    </div>
   </div>
-
-  
-
-  <!-- <hr />
-
-  <button>Export as JSON</button> -->
 </div>
-
-
 <!-- <button id="export-palette">Export styles to colour palette</button> -->

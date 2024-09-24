@@ -13,6 +13,7 @@
   "networkAccess": {
     "allowedDomains": [
       "https://static.figma.com",
+      "https://fonts.googleapis.com/css",
       "https://unpkg.com/petite-vue@0.4.1/dist/petite-vue.es.js"
     ]
   }
