@@ -65,31 +65,49 @@
   }
 
   .tabs {
-    background: var(--grey_900);
     display: flex;
-    padding: 10px 10px 0;
     gap: 1em;
     margin-bottom: 16px;
   }
 
   .tab {
+    border-top: 3px solid transparent;
     padding: 6px 10px;
     color: var(--pink);
     text-decoration: none;
+  }
+
+  .spacer {
+    flex-grow: 1;
+  }
+
+  .tab:hover:not(.tab--active) {
     background: var(--grey_950);
-    border: 1px solid var(--grey_800);
-    border-bottom: 0;
   }
 
   .tab--active {
-    background: var(--white);
-    color: var(--grey_50);
+    color: white;
+    background: var(--pink);
     font-weight: 700;
     cursor: default;
   }
 
+  .columns {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .col-half {
+    width: 45%;
+  }
+
   .flex {
     display: flex;
+  }
+
+  .text-link {
+    color: var(--pink);
+    cursor: pointer;
   }
 
   .text-center {
@@ -110,15 +128,6 @@
     align-items: center;
     gap: 0.5em;
   }
-
-  /* .form-field {
-
-  }
-
-  .form-label {
-    font-weight: 700;
-    display: block;
-  } */
 
   .swatches {
     display: flex;
@@ -177,6 +186,16 @@
     margin: 0;
     scrollbar-width: thin;
   }
+
+  .shades {
+  }
+
+  .shade {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+  }
 </style>
 
 <script type="module">
@@ -212,8 +231,8 @@
   createApp({
     store,
 
+    activeTab: 'help',
     // activeTab: 'palettes',
-    activeTab: 'shades',
 
     paletteName: '',
 
@@ -224,27 +243,26 @@
     shadesPrefix: 'grey',
     shadesCount: 12,
 
+    shades: [],
+
     colors: [
       // test colour palette
-      { name: "pink", hex: "#ff3399" },
-      { name: "blue", hex: "#33d5ff" },
-      { name: "grey", hex: "#b3b3d4" },
-      { name: "green", hex: "#00d364" },
-      { name: "purple", hex: "#cc66ff" },
-      { name: "yellow", hex: "#ffcc66" },
-      { name: "turquoise", hex: "#00ced1" },
-      { name: "midnight-sky", hex: "#1d1d26" },
-      { name: "overcast-sky", hex: "#c8c8d5" },
-      { name: "tangerine", hex: "#ffaa00" },
-      { name: "red", hex: "#f10f69" }
+      // { name: "pink", hex: "#ff3399" },
+      // { name: "blue", hex: "#33d5ff" },
+      // { name: "grey", hex: "#b3b3d4" },
+      // { name: "green", hex: "#00d364" },
+      // { name: "purple", hex: "#cc66ff" },
+      // { name: "yellow", hex: "#ffcc66" },
+      // { name: "turquoise", hex: "#00ced1" },
+      // { name: "midnight-sky", hex: "#1d1d26" },
+      // { name: "overcast-sky", hex: "#c8c8d5" },
+      // { name: "tangerine", hex: "#ffaa00" },
+      // { name: "red", hex: "#f10f69" }
     ],
 
-    // codeBlocks: [],
-
-    /* get codeBlocks() {
-      console.log('store code blocks', toObject(this.store))
-      return getGeneratedCodeForColours(toObject(this.colors))
-    }, */
+    get storeColoursWithoutShades() {
+      return this.store.colours.filter((color) => !color.name.startsWith('shade'))
+    },
 
     addColor() {
       if (!this.currentColorName) {
@@ -270,14 +288,11 @@
     },
 
     generateShades() {
-      console.log('shades count', this.shadesCount)
-      const shades = shadesFromColour(
+      this.shades = shadesFromColour(
         this.shadesColorHex,
         this.shadesPrefix,
         this.shadesCount,
       )
-
-      console.log('shades', shades)
     },
 
     copyCodeToClipboard(codeBlock) {
@@ -295,6 +310,32 @@
         pluginMessage: {
           type: 'refresh-local-styles',
           data: {},
+        }
+      }, '*')
+    },
+
+    createShadesPalette() {
+      if (!this.shades.length) {
+        alert('must have shades to generate a palette')
+        return
+      }
+
+      const colourScheme = getColourScheme()
+
+      const paletteName = 'shades'
+      const colours = this.shades.map((shade) => ({
+        name: this.shadesPrefix + '/' + shade.name,
+        hex: shade.hex,
+      }))
+
+      parent.postMessage({
+        pluginMessage: {
+          type: 'create-palette',
+          data: {
+            paletteName,
+            colourScheme,
+            colours,
+          },
         }
       }, '*')
     },
@@ -415,7 +456,7 @@
 
     // Generate code for Android (Jetpack Compose)
     const androidComposeCode = [
-      'object Shades {'
+      'object BrandColors {'
     ]
     colours.forEach((swatch) => {
       androidComposeCode.push(`    val ${swatch.name} = Color(0xFF${swatch.hex.toUpperCase().replace('#', '')})`)
@@ -729,10 +770,16 @@
     <a href="#" class="tab" @click="activeTab = 'code'" :class="{ 'tab--active': activeTab === 'code'}">
       Styles Code
     </a>
+
+    <div class="spacer"></div>
+
+    <a href="#" class="tab" @click="activeTab = 'help'" :class="{ 'tab--active': activeTab === 'help'}">
+      ℹ️ Help!
+    </a>
   </div>
 
   <div v-if="activeTab === 'palettes'">
-    <h2>Add colour</h2>
+    <h2>Colour Palettes</h2>
 
     <h3>Palette Name</h3>
     <div class="form-section">
@@ -756,8 +803,12 @@
         </button>
       </div>
     </div>
+
+    <p v-if="colors.length">
+      Creating styles will generate <strong>Local Styles</strong> for the provided colour palette and create sample swatches.
+    </p>
     <div v-if="colors.length" class="form-section button-layout">
-      <button class="primary" @click="createColorPalette">Create Palette</button>
+      <button class="primary" @click="createColorPalette">Create Styles</button>
       <button @click="resetPalette">Reset</button>
     </div>
 
@@ -769,20 +820,20 @@
   <div v-if="activeTab === 'shades'">
     <h2>Shades Generator</h2>
     <p>
-      Pick a colour and generate shades for it.
-    </p>
-    <p>
+      Pick a colour and generate shades for it. <br/>
       You can use the eye dropper to pick from any element or choose from all your styles.
     </p>
 
-    <div class="form-section">
-      <h3>Prefix</h3>
-      <input type="text" v-model="shadesPrefix">
-    </div>
+    <div class="columns">
+      <div class="col-half">
+        <h3>Prefix</h3>
+        <input type="text" v-model="shadesPrefix" @input="generateShades()">
+      </div>
 
-    <div class="form-section">
-      <h3>Number of shades</h3>
-      <input type="number" v-model="shadesCount">
+      <div class="col-half">
+        <h3>Number of shades</h3>
+        <input type="number" v-model="shadesCount" @input="generateShades()">
+      </div>
     </div>
 
     <h3>Pick colour</h3>
@@ -792,10 +843,49 @@
       <button type="submit" @click="generateShades">Generate</button>
     </form>
 
-    <div v-if="store.colours.length" class="swatches form-section">
-      <div v-for="color in store.colours" class="swatch" :style="{ background: color.hex }"
+    <div v-if="storeColoursWithoutShades.length" class="swatches form-section">
+      <div v-for="color in storeColoursWithoutShades" class="swatch" :style="{ background: color.hex }"
         @click="shadesColorHex = color.hex; generateShades();">
         <span class="swatch__label">{{color.name.split('__')[1]}}</span>
+      </div>
+    </div>
+
+    <div v-if="!shades.length">
+      <p class="text-center form-section">Click generate after configuring the shades you want</p>
+    </div>
+
+    <div class="shades" v-if="shades.length">
+      <div v-for="shade in shades" class="shade" :style="{ background: shade.hex }">
+        <div>
+          <span class="swatch__label">
+            {{shade.name}}
+          </span>
+        </div>
+
+        <div>
+          <span class="swatch__label">
+            {{shade.hex}}
+          </span>
+          <span class="swatch__label">
+            {{shade.hsl}}
+          </span>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <p>
+          Creating styles will generate <strong>Local Styles</strong> for the provided colour palette and create sample swatches.
+        </p>
+        <button class="primary" @click="createShadesPalette">
+          Create Styles
+        </button>
+      </div>
+
+      <div class="form-section">
+        <p>
+          If you manually add or remove styles, click <strong>Refresh</strong>.
+        </p>
+        <button @click="refreshLocalStyles">Refresh</button>
       </div>
     </div>
   </div>
@@ -825,6 +915,19 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <div v-if="activeTab === 'help'">
+    <h2>Instructions</h2>
+    <p>
+      The <strong class="text-link" @click="activeTab = 'palettes'">Colour Palettes</strong> tab has a tool that allows you to manually pick colours and generate <strong>Local Styles</strong> for them so they can be easily reused while creating in Figma. After you're happy with your colours, click <strong>Create Styles</strong> to create local styles.
+    </p>
+    <p>
+      The <strong class="text-link" @click="activeTab = 'shades'">Shades</strong> tab has a tool that generates shades for you based off of any colour. You can choose one ad-hoc or from your existing styles. After generating some shades, you can turn them into <strong>Local Styles</strong> styles by clicking <strong>Create Styles</strong> under the generated shades.
+    </p>
+    <p>
+      Any colours under <strong>Local Styles</strong> will be available as code snippets under the <strong class="text-link" @click="activeTab = 'code'">Styles Code</strong> tab. This tab contains code snippets for web and mobile development (CSS, Android).
+    </p>
   </div>
 </div>
 <!-- <button id="export-palette">Export styles to colour palette</button> -->
