@@ -101,6 +101,10 @@
     width: 45%;
   }
 
+  .col-third {
+    width: 30%;
+  }
+
   .flex {
     display: flex;
   }
@@ -231,8 +235,7 @@
   createApp({
     store,
 
-    activeTab: 'help',
-    // activeTab: 'palettes',
+    activeTab: 'palettes',
 
     paletteName: '',
 
@@ -242,6 +245,7 @@
     shadesColorHex: '#ff3399',
     shadesPrefix: 'grey',
     shadesCount: 12,
+    shadesPalette: '',
 
     shades: [],
 
@@ -261,7 +265,7 @@
     ],
 
     get storeColoursWithoutShades() {
-      return this.store.colours.filter((color) => !color.name.startsWith('shade'))
+      return this.store.colours.filter((color) => !color.name.includes('shade'))
     },
 
     addColor() {
@@ -320,11 +324,16 @@
         return
       }
 
+      if (!this.shadesPalette) {
+        alert('shades palette must have a name. this is usually the same name as the colour palette it belongs to.')
+        return
+      }
+
       const colourScheme = getColourScheme()
 
-      const paletteName = 'shades'
+      const paletteName = this.shadesPalette + '/shades-' + this.shadesPrefix
       const colours = this.shades.map((shade) => ({
-        name: this.shadesPrefix + '/' + shade.name,
+        name: shade.name,
         hex: shade.hex,
       }))
 
@@ -374,56 +383,6 @@
       }, '*')
     },
   }).mount()
-
-
-  /* document.getElementById('create-palette').addEventListener('click', (evt) => {
-    const colourScheme = getColourScheme()
-
-    parent.postMessage({
-      pluginMessage: {
-        type: 'create-palette',
-        data: {
-          paletteName: 'Tinacious Design',
-          count: 12,
-          colourScheme,
-          colours: this.colors,
-        },
-      }
-    }, '*')
-  }) */
-
-  /* document.getElementById('export-palette').addEventListener('click', (evt) => {
-    parent.postMessage({
-      pluginMessage: {
-        type: 'export-palette',
-        data: {},
-      }
-    }, '*')
-  }) */
-
-  /* const showError = errorMessage => {
-    document.querySelector('#errors').textContent = errorMessage
-  }
-  document.getElementById('bar-chart').addEventListener('click', (evt) => {
-    const text = document.querySelector('#textbox').value
-
-    let numbers = text.split(',').map(x => +x)
-    if (numbers.length < 2) {
-      showError('Error: Must have at least two values');
-      return
-    }
-    if (numbers.some(x => isNaN(x))) {
-      showError('Error: All values must be numbers');
-      return
-    }
-
-    parent.postMessage({
-      pluginMessage: {
-        type: 'graph',
-        data: numbers,
-      }
-    }, '*')
-  }) */
 
 
   /**
@@ -825,12 +784,17 @@
     </p>
 
     <div class="columns">
-      <div class="col-half">
+      <div class="col-third">
+        <h3>Palette Name</h3>
+        <input type="text" v-model="shadesPalette" @input="generateShades()">
+      </div>
+
+      <div class="col-third">
         <h3>Prefix</h3>
         <input type="text" v-model="shadesPrefix" @input="generateShades()">
       </div>
 
-      <div class="col-half">
+      <div class="col-third">
         <h3>Minimum number of shades</h3>
         <input type="number" v-model="shadesCount" @input="generateShades()">
       </div>
@@ -956,4 +920,3 @@
     </ol>
   </div>
 </div>
-<!-- <button id="export-palette">Export styles to colour palette</button> -->
