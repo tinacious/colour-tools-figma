@@ -1,7 +1,6 @@
 
-figma.showUI(__html__, { width: 500, height: 300 })
+figma.showUI(__html__, { width: 600, height: 460 })
 
-// createRectanglesExample()
 
 figma.ui.onmessage = async (message) => {
   switch (message.type) {
@@ -22,24 +21,27 @@ figma.ui.onmessage = async (message) => {
 type CreatePaletteRequest = {
   colourScheme: 'dark' | 'light'
   paletteName: string
-  count: number
+  colours: {
+    name: string
+    hex: string
+  }[]
 }
 
 async function createColourPalette(data: CreatePaletteRequest) {
   console.log('createColourPalette', 'data', data)
 
-  const { paletteName, count, colourScheme } = data
+  const { paletteName, colours } = data
 
   const frame = figma.createFrame()
   frame.resize(200, 200)
 
   frame.name = paletteName
-  frame.fills = [
-    { 
-      type: 'SOLID', 
-      color: colourScheme === 'dark' ? hexToFigmaRGB('#000000') : hexToFigmaRGB('#FFFFFF')
-    }
-  ]
+  // frame.fills = [
+  //   {
+  //     type: 'SOLID',
+  //     color: colourScheme === 'dark' ? hexToFigmaRGB('#000000') : hexToFigmaRGB('#FFFFFF')
+  //   }
+  // ]
   frame.layoutMode = 'HORIZONTAL'
   frame.layoutSizingHorizontal = 'HUG'
 
@@ -54,21 +56,25 @@ async function createColourPalette(data: CreatePaletteRequest) {
   // figma.currentPage.selection = nodes;
   // figma.viewport.scrollAndZoomIntoView(nodes);
 
-  
 
-  themes.tinacious.colours.forEach(async (colour) => {
-    const name = colour.name
-    const hex = colour.colour
+
+  colours.forEach(async (colour) => {
+    const { name, hex } = colour
 
     // Create the rectangle
     const swatch = figma.createRectangle()
     swatch.name = name
     swatch.resize(200, 200)
+    swatch.fills = [
+      {
+        type: 'SOLID',
+        color: hexToFigmaRGB(hex),
+      }
+    ]
 
     // Create styles
     const paintStyle = figma.createPaintStyle()
     paintStyle.name = paletteName + '/' + name
-    
     paintStyle.paints = [
       {
         type: 'SOLID',
@@ -219,7 +225,7 @@ const themes = {
         colour: "#ffcc66"
       },
       {
-        name: "blue",
+        name: "turquoise",
         colour: "#00ced1"
       },
       {
@@ -248,28 +254,28 @@ const namesRGB = ['r', 'g', 'b']
 
 
 function hexToFigmaRGB(color: string): RGB | RGBA {
-	let opacity = ''
+  let opacity = ''
 
-	color = color.toLowerCase()
+  color = color.toLowerCase()
 
-	if (color[0] === '#') color = color.slice(1)
-	if (color.length === 3) {
-		color = color.replace(/(.)(.)(.)?/g, '$1$1$2$2$3$3')
-	} else if (color.length === 8) {
-		const arr = color.match(/(.{6})(.{2})/) || new Array(8)
-		color = arr[1]
-		opacity = arr[2]
-	}
+  if (color[0] === '#') color = color.slice(1)
+  if (color.length === 3) {
+    color = color.replace(/(.)(.)(.)?/g, '$1$1$2$2$3$3')
+  } else if (color.length === 8) {
+    const arr = color.match(/(.{6})(.{2})/) || new Array(8)
+    color = arr[1]
+    opacity = arr[2]
+  }
 
-	const num = parseInt(color, 16)
-	const rgb = [num >> 16, (num >> 8) & 255, num & 255]
+  const num = parseInt(color, 16)
+  const rgb = [num >> 16, (num >> 8) & 255, num & 255]
 
-	if (opacity) {
-		rgb.push(parseInt(opacity, 16) / 255)
-		return webRGBToFigmaRGB(rgb as webRGBA)
-	} else {
-		return webRGBToFigmaRGB(rgb as webRGB)
-	}
+  if (opacity) {
+    rgb.push(parseInt(opacity, 16) / 255)
+    return webRGBToFigmaRGB(rgb as webRGBA)
+  } else {
+    return webRGBToFigmaRGB(rgb as webRGB)
+  }
 }
 
 
@@ -279,14 +285,14 @@ type webRGBA = [number, number, number, number]
 function webRGBToFigmaRGB(color: webRGBA): RGBA
 function webRGBToFigmaRGB(color: webRGB): RGB
 function webRGBToFigmaRGB(color): any {
-	const rgb = {}
+  const rgb = {}
 
-	namesRGB.forEach((e, i) => {
-		rgb[e] = color[i] / 255
-	})
+  namesRGB.forEach((e, i) => {
+    rgb[e] = color[i] / 255
+  })
 
-	if (color[3] !== undefined) rgb['a'] = color[3]
-	return rgb
+  if (color[3] !== undefined) rgb['a'] = color[3]
+  return rgb
 }
 
 

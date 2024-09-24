@@ -12,7 +12,8 @@
   ],
   "networkAccess": {
     "allowedDomains": [
-      "https://static.figma.com"
+      "https://static.figma.com",
+      "https://unpkg.com/petite-vue@0.4.1/dist/petite-vue.es.js"
     ]
   }
 }
