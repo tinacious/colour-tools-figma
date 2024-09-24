@@ -241,13 +241,17 @@ type webRGBA = [number, number, number, number]
 
 function webRGBToFigmaRGB(color: webRGBA): RGBA
 function webRGBToFigmaRGB(color: webRGB): RGB
+// @ts-expect-error Library code
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function webRGBToFigmaRGB(color): any {
   const rgb = {}
 
   namesRGB.forEach((e, i) => {
+    // @ts-expect-error Library code
     rgb[e] = color[i] / 255
   })
 
+  // @ts-expect-error Library code
   if (color[3] !== undefined) rgb['a'] = color[3]
   return rgb
 }
@@ -271,6 +275,8 @@ function figmaRGBToHex(color: RGB | RGBA): string {
 
 function figmaRGBToWebRGB(color: RGBA): webRGBA
 function figmaRGBToWebRGB(color: RGB): webRGB
+// @ts-expect-error Library code
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function figmaRGBToWebRGB(color): any {
   const rgb = []
 
