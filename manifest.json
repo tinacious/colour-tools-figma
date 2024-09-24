@@ -15,6 +15,7 @@
       "https://static.figma.com",
       "https://fonts.gstatic.com",
       "https://fonts.googleapis.com",
+      "https://colorjs.io/dist/color.js",
       "https://unpkg.com/petite-vue@0.4.1/dist/petite-vue.es.js"
     ]
   }

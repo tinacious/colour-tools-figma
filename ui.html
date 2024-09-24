@@ -28,10 +28,21 @@
     --white: rgb(255, 255, 255);
   }
 
-
   body {
     font-family: Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
     line-height: 1.6;
+  }
+
+  /* extending Figma UI */
+
+  input[type="number"] {
+    font-family: 'Roboto', sans-serif;
+    color: #444;
+    height: 24px;
+    padding: 0 2px 0 4px;
+    box-sizing: border-box;
+    border: 1px solid #d4d4d4;
+    border-radius: 3px;
   }
 
   button.danger {
@@ -169,6 +180,7 @@
 </style>
 
 <script type="module">
+  import Color from "https://colorjs.io/dist/color.js"
   import { createApp, reactive } from 'https://unpkg.com/petite-vue@0.4.1/dist/petite-vue.es.js?module'
 
   const store = reactive({
@@ -191,7 +203,7 @@
         )
         return
       default:
-        // nothing
+      // nothing
     }
   }, false)
 
@@ -207,7 +219,10 @@
 
     currentColorName: '',
     currentColorHex: getDefaultColour(),
+
     shadesColorHex: '#ff3399',
+    shadesPrefix: 'grey',
+    shadesCount: 12,
 
     colors: [
       // test colour palette
@@ -252,6 +267,17 @@
 
     resetPalette() {
       this.colors = []
+    },
+
+    generateShades() {
+      console.log('shades count', this.shadesCount)
+      const shades = shadesFromColour(
+        this.shadesColorHex,
+        this.shadesPrefix,
+        this.shadesCount,
+      )
+
+      console.log('shades', shades)
     },
 
     copyCodeToClipboard(codeBlock) {
@@ -431,9 +457,7 @@
     // Generate CSS code (hsl)
     const cssCodeHsl = [':root {']
     colours.forEach((swatch) => {
-      const { h, s, l } = hexToHsl(swatch.hex)
-      const hslCss = `hsl(${(h * 360).toFixed(0)}, ${(s * 100).toFixed(0)}%, ${(l * 100).toFixed(0)}%)`
-
+      const hslCss = hslToHslCss(hexToHsl(swatch.hex))
       cssCodeHsl.push(`  --${swatch.name}: ${hslCss};`)
     })
     cssCodeHsl.push('}')
@@ -541,26 +565,156 @@
    * source: https://stackoverflow.com/a/3732187
    */
   function hexToHsl(hex) {
-    let { r, g, b } = hexToWebRGB(hex)
+    const { h, s, l } = new Color(hex).to('hsl')
 
-    r /= 255, g /= 255, b /= 255;
-    let max = Math.max(r, g, b), min = Math.min(r, g, b);
-    let h, s, l = (max + min) / 2;
+    return { h, s, l }
+  }
 
-    if (max == min) {
-      h = s = 0; // achromatic
-    } else {
-      var d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      switch (max) {
-        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / d + 2; break;
-        case b: h = (r - g) / d + 4; break;
-      }
-      h /= 6;
+  function shadesFromColour(colour, prefix, count) {
+    const darkest = 0
+    const lightest = 100
+    const diff = (lightest - darkest) / (count + 1)
+
+    let currentLightness = darkest
+
+    const base = hexToHsl(colour)
+    const swatches = []
+
+    swatches.push({
+      ...base,
+      l: 0,
+    })
+
+    for (let i = darkest; i <= Math.ceil(count); i++) {
+      currentLightness += diff
+
+      swatches.push({
+        ...base,
+        l: currentLightness,
+      })
     }
 
-    return { h, s, l };
+    const transformedSwatches = swatches.map((swatch, idx) => {
+      const name = swatch.l === 0 ? 'black' :
+        Math.ceil(swatch.l) >= 100 ? 'white' :
+          `${prefix}_${Math.floor((idx) * 100)}`;
+
+      const asHex = hslToHex(swatch);
+
+      return {
+        name,
+        androidCompose: hexToAndroidCompose(asHex),
+        hex: asHex,
+        hsl: hslToHslCss(swatch),
+        rgb: hexToRgbCss(asHex),
+      }
+    })
+
+    // Add a 95% lightness swatch if it doesn't exist
+    if (_requiresTargetSwatch(swatches, 95, [95, 100])) {
+      const lastIndex = swatches.length - 1
+      const secondLastIndex = lastIndex - 1
+      const secondLastItem = swatches[secondLastIndex]
+
+      if (secondLastItem) {
+        const newSwatch = {
+          ...base,
+          l: 95,
+        }
+
+        const asHex = hslToHex(newSwatch);
+
+        transformedSwatches.splice(-1, 0, {
+          name: `${prefix}_${(secondLastIndex * 100) + 50}`,
+          androidCompose: hexToAndroidCompose(asHex),
+          hex: asHex,
+          hsl: hslToHslCss(newSwatch),
+          rgb: hexToRgbCss(asHex),
+        })
+      }
+    }
+
+
+    // Add a 5% lightness swatch if it doesn't exist
+    if (_requiresTargetSwatch(swatches, 5, [5, 10])) {
+      const secondItem = swatches[1]
+
+      if (secondItem) {
+        const newSwatch = {
+          ...base,
+          l: 5,
+        }
+
+        const asHex = hslToHex(newSwatch)
+
+        transformedSwatches.splice(1, 0, {
+          name: `${prefix}_50`,
+          androidCompose: hexToAndroidCompose(asHex),
+          hex: asHex,
+          hsl: hslToHslCss(newSwatch),
+          rgb: hexToRgbCss(asHex),
+        })
+      }
+    }
+
+    return transformedSwatches
+  }
+
+  function _requiresTargetSwatch(swatches, target, range) {
+    const [start, end] = range
+
+    const targetSwatch = swatches.find((swatch) => {
+      const lightness = Math.ceil(swatch.l)
+
+      if (lightness === target) return true
+
+      if (!lightness || lightness >= 100) return false
+
+      // For the light end
+      if (lightness > target && lightness < end) {
+        return true
+      }
+
+      // For the dark end
+      if (lightness < target && lightness > start) {
+        return true
+      }
+
+      return false
+    })
+
+    return !(!!targetSwatch)
+  }
+
+  function hslToHex({ h, s, l }) {
+    const hsl = new Color('hsl', [h, s, l])
+    const rgb = hsl.to('srgb')
+
+    return rgb.toString({ format: 'hex' })
+  }
+
+  function hslToHslCss({ h, s, l }) {
+    const hsl = new Color('hsl', [h, s, l])
+    return hsl.toString({ precision: 0 })
+  }
+
+  function hexToRgbCss(hex) {
+    const rgb = new Color(hex)
+
+    const r = rgb.r * 255
+    const g = rgb.g * 255
+    const b = rgb.b * 255
+
+    return 'rgb(' + [r, g, b].join(', ') + ')'
+  }
+
+  function rgbToRgbCss({ r, g, b }) {
+    const rgb = new Color('srgb', [r, g, b])
+    return rgb.toString({ format: 'rgb' })
+  }
+
+  function hexToAndroidCompose(hex) {
+    return `Color(0xFF${hex.toUpperCase().replace('#', '')})`
   }
 </script>
 
@@ -621,14 +775,26 @@
       You can use the eye dropper to pick from any element or choose from all your styles.
     </p>
 
-    <h3>Pick colour</h3>
-    <div class="add-color-form button-layout" @submit.prevent="">
-      <input type="color" name="picked_color" v-model="shadesColorHex">
-      <input type="text" name="picked_color" v-model="shadesColorHex">
+    <div class="form-section">
+      <h3>Prefix</h3>
+      <input type="text" v-model="shadesPrefix">
     </div>
 
+    <div class="form-section">
+      <h3>Number of shades</h3>
+      <input type="number" v-model="shadesCount">
+    </div>
+
+    <h3>Pick colour</h3>
+    <form class="add-color-form button-layout" @submit.prevent="">
+      <input type="color" name="picked_color" v-model="shadesColorHex" @change="generateShades">
+      <input type="text" name="picked_color" v-model="shadesColorHex" @change="generateShades">
+      <button type="submit" @click="generateShades">Generate</button>
+    </form>
+
     <div v-if="store.colours.length" class="swatches form-section">
-      <div v-for="color in store.colours" class="swatch" :style="{ background: color.hex }" @click="shadesColorHex = color.hex">
+      <div v-for="color in store.colours" class="swatch" :style="{ background: color.hex }"
+        @click="shadesColorHex = color.hex; generateShades();">
         <span class="swatch__label">{{color.name.split('__')[1]}}</span>
       </div>
     </div>

@@ -1,4 +1,3 @@
-
 figma.showUI(__html__, { width: 600, height: 460 })
 
 async function loadLocalStyles() {
