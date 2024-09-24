@@ -1,5 +1,5 @@
 
-figma.showUI(__html__, { width: 600, height: 600 })
+figma.showUI(__html__, { width: 600, height: 460 })
 
 async function loadLocalStyles() {
   const styles = await figma.getLocalPaintStylesAsync()
