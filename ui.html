@@ -172,18 +172,24 @@
   import { createApp, reactive } from 'https://unpkg.com/petite-vue@0.4.1/dist/petite-vue.es.js?module'
 
   const store = reactive({
+    colours: [],
     codeBlocks: [],
     setCodeBlocks(data) {
       this.codeBlocks = data
     },
+    setColours(colours) {
+      this.colours = colours
+    }
   })
 
   window.addEventListener('message', ({ data }) => {
     switch (data.pluginMessage.type) {
       case 'local-styles':
-        return store.setCodeBlocks(
+        store.setColours(data.pluginMessage.data)
+        store.setCodeBlocks(
           getGeneratedCodeForColours(data.pluginMessage.data)
         )
+        return
       default:
         // nothing
     }
@@ -194,26 +200,28 @@
   createApp({
     store,
 
-    activeTab: 'palettes',
+    // activeTab: 'palettes',
+    activeTab: 'shades',
 
     paletteName: '',
 
     currentColorName: '',
     currentColorHex: getDefaultColour(),
+    shadesColorHex: '#ff3399',
 
     colors: [
       // test colour palette
-      // { name: "pink", hex: "#ff3399" },
-      // { name: "blue", hex: "#33d5ff" },
-      // { name: "grey", hex: "#b3b3d4" },
-      // { name: "green", hex: "#00d364" },
-      // { name: "purple", hex: "#cc66ff" },
-      // { name: "yellow", hex: "#ffcc66" },
-      // { name: "turquoise", hex: "#00ced1" },
-      // { name: "midnight-sky", hex: "#1d1d26" },
-      // { name: "overcast-sky", hex: "#c8c8d5" },
-      // { name: "tangerine", hex: "#ffaa00" },
-      // { name: "red", hex: "#f10f69" }
+      { name: "pink", hex: "#ff3399" },
+      { name: "blue", hex: "#33d5ff" },
+      { name: "grey", hex: "#b3b3d4" },
+      { name: "green", hex: "#00d364" },
+      { name: "purple", hex: "#cc66ff" },
+      { name: "yellow", hex: "#ffcc66" },
+      { name: "turquoise", hex: "#00ced1" },
+      { name: "midnight-sky", hex: "#1d1d26" },
+      { name: "overcast-sky", hex: "#c8c8d5" },
+      { name: "tangerine", hex: "#ffaa00" },
+      { name: "red", hex: "#f10f69" }
     ],
 
     // codeBlocks: [],
@@ -518,6 +526,9 @@
     document.body.removeChild(textArea);
   }
 
+  /**
+   * source: https://stackoverflow.com/a/3732187
+   */
   function hexToWebRGB(hex) {
     const r = parseInt(hex.substr(1, 2), 16)
     const g = parseInt(hex.substr(3, 2), 16)
@@ -526,6 +537,9 @@
     return { r, g, b }
   }
 
+  /**
+   * source: https://stackoverflow.com/a/3732187
+   */
   function hexToHsl(hex) {
     let { r, g, b } = hexToWebRGB(hex)
 
@@ -598,6 +612,28 @@
     </div>
   </div>
 
+  <div v-if="activeTab === 'shades'">
+    <h2>Shades Generator</h2>
+    <p>
+      Pick a colour and generate shades for it.
+    </p>
+    <p>
+      You can use the eye dropper to pick from any element or choose from all your styles.
+    </p>
+
+    <h3>Pick colour</h3>
+    <div class="add-color-form button-layout" @submit.prevent="">
+      <input type="color" name="picked_color" v-model="shadesColorHex">
+      <input type="text" name="picked_color" v-model="shadesColorHex">
+    </div>
+
+    <div v-if="store.colours.length" class="swatches form-section">
+      <div v-for="color in store.colours" class="swatch" :style="{ background: color.hex }" @click="shadesColorHex = color.hex">
+        <span class="swatch__label">{{color.name.split('__')[1]}}</span>
+      </div>
+    </div>
+  </div>
+
   <div v-if="activeTab === 'code'">
     <h2>Local Styles</h2>
     <p>
@@ -608,7 +644,7 @@
     </p>
     <button @click="refreshLocalStyles">Refresh</button>
 
-    <div v-if="store.codeBlocks.length" class="form-section code-layout" v-if="codeBlocks.length">
+    <div v-if="store.codeBlocks.length" class="form-section code-layout">
       <div class="code-layout__item" v-for="codeBlock in store.codeBlocks">
         <div class="code-layout__title">
           <h3>{{codeBlock.name}}</h3>
