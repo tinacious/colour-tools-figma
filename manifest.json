@@ -3,6 +3,7 @@
   "id": "1420155850496120693",
   "api": "1.0.0",
   "main": "code.js",
+  "ui": "ui.html",
   "capabilities": [],
   "enableProposedApi": false,
   "documentAccess": "dynamic-page",
@@ -11,7 +12,11 @@
   ],
   "networkAccess": {
     "allowedDomains": [
-      "none"
+      "https://static.figma.com",
+      "https://fonts.gstatic.com",
+      "https://fonts.googleapis.com",
+      "https://colorjs.io/dist/color.js",
+      "https://unpkg.com/petite-vue@0.4.1/dist/petite-vue.es.js"
     ]
   }
 }
