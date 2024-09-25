@@ -418,7 +418,7 @@
       'object BrandColors {'
     ]
     colours.forEach((swatch) => {
-      androidComposeCode.push(`    val ${swatch.name} = Color(0xFF${swatch.hex.toUpperCase().replace('#', '')})`)
+      androidComposeCode.push(`    val ${swatch.name.replaceAll('-', '_')} = ${hexToAndroidCompose(swatch.hex)}`)
     })
     androidComposeCode.push('}')
     codeBlocks.push({
