@@ -116,6 +116,7 @@ async function createColourPalette(data: CreatePaletteRequest) {
   loadLocalStyles()
 }
 
+// This isn't used yet but can potentially be useful if we want a JSON format for sharing colours using import/export
 async function exportStylesToColourPalette() {
   const styles = await figma.getLocalPaintStylesAsync();
 
