@@ -431,7 +431,7 @@
     const tailwindCode = []
     // const tailwindCode = ['colors: {']
     colours.forEach((swatch) => {
-      tailwindCode.push(`  ${swatch.name}: '${swatch.hex}',`)
+      tailwindCode.push(`  ${swatch.name.replaceAll('-', '_')}: '${swatch.hex}',`)
     })
     // tailwindCode.push('}')
 
