@@ -506,6 +506,22 @@
       code: stylusCssCode.join('\n'),
     })
 
+    // const wpCode = ['"palette": [']
+    const wpCode = colours.map((swatch) => {
+      return JSON.stringify({
+        slug: swatch.name,
+        color: swatch.hex,
+        name: swatch.name,
+      }, null, 2)
+    }).join(',\n')
+    // wpCode.push(']')
+
+    codeBlocks.push({
+      name: 'WordPress theme',
+      comment: `// ${copiedComment}`,
+      code: '"palette": [\n' + wpCode + '\n]',
+    })
+
     return codeBlocks
   }
 
